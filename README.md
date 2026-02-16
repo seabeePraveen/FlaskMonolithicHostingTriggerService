@@ -2,6 +2,9 @@
 
 **SelfHoster** is a lightweight, dynamic hosting service designed to deploy and manage multiple Flask applications from GitHub repositories instantly. It features a modern web dashboard and a dynamic request dispatcher that allows multiple standalone Flask apps to run concurrently under a single host.
 
+### 🌐 Live Demo
+You can try SelfHoster live here: **[flaskmonolithichostingtriggerservice.onrender.com](https://flaskmonolithichostingtriggerservice.onrender.com/)**
+
 ---
 
 ## ✨ Key Features
