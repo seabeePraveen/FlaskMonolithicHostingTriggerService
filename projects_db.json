@@ -1,0 +1,10 @@
+{
+    "leetcode-subscription-bypass-backend": {
+        "repo_url": "https://github.com/seabeePraveen/leetcode-subscription-bypass-backend.git",
+        "entry_point": "main"
+    },
+    "temp": {
+        "repo_url": "https://github.com/seabeePraveen/leetcode-subscription-bypass-backend.git",
+        "entry_point": "app"
+    }
+}
