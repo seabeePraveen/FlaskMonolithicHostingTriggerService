@@ -60,7 +60,10 @@ The dashboard will be available at `http://localhost:5000`.
 1.  **Deploy a Project**: Paste a GitHub repository URL into the "Repository URL" field.
 2.  **Specify Entry File**: Tell SelfHoster which file contains the Flask `app` object (e.g., `app.py`).
 3.  **Configure Environment**: Add any required environment variables (e.g., `API_KEY=12345`) and extra dependencies.
-4.  **Access your App**: Once cloned, your app is available at `http://localhost:5000/your-repo-name/`.
+4.  **Access your App**: Once cloned, your project is automatically mapped to its own sub-path: `http://localhost:5000/<project_name>/`.
+5.  **Project Routing**: All endpoints defined within your specific project's Flask app are accessible relative to its sub-path. 
+    *   *Example*: If your project has a route `@app.route('/login')`, it will be available at `http://localhost:5000/<project_name>/login`.
+    *   *Base Path*: Ensure your project's internal links use relative paths or account for the dynamic prefixing handled by SelfHoster.
 
 ---
 
