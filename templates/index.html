@@ -51,6 +51,7 @@
             font-size: 3rem;
             font-weight: 600;
             background: linear-gradient(to right, #818cf8, #c084fc);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
@@ -74,16 +75,17 @@
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.5rem;
             margin-top: 1.5rem;
         }
 
-        .inputs {
+        .inputs-row {
             display: flex;
             gap: 1rem;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        textarea {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
             border-radius: 0.75rem;
@@ -94,16 +96,24 @@
             transition: border-color 0.2s;
         }
 
-        #repo-url {
-            flex: 2;
+        textarea {
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', Courier, monospace;
         }
 
-        #entry-point {
-            flex: 1;
-        }
-
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        textarea:focus {
             border-color: var(--primary);
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+            display: block;
+            font-weight: 600;
         }
 
         button {
@@ -120,10 +130,6 @@
         button:hover {
             background: var(--primary-hover);
             transform: translateY(-1px);
-        }
-
-        button:active {
-            transform: translateY(0);
         }
 
         button:disabled {
@@ -148,12 +154,57 @@
             text-decoration: none;
             color: inherit;
             display: block;
+            position: relative;
         }
 
         .project-card:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: var(--primary);
             transform: scale(1.02);
+        }
+
+        .delete-btn,
+        .edit-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 0.75rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .delete-btn {
+            color: #f87171;
+        }
+
+        .edit-btn {
+            color: #818cf8;
+        }
+
+        .delete-btn:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .edit-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .card-actions {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            gap: 0.4rem;
+            z-index: 10;
         }
 
         .project-icon {
@@ -219,22 +270,48 @@
         </header>
 
         <section class="card">
-            <h2>Clone New Project</h2>
-            <p style="color: var(--text-muted); margin-top: 0.5rem;">Enter a GitHub repository URL to host it locally.
-            </p>
+            <h2 id="form-title">Clone New Project</h2>
+            <p id="form-subtitle" style="color: var(--text-muted); margin-top: 0.5rem;">Enter a GitHub repository URL to
+                host it locally.</p>
             <div class="input-group">
-                <div class="inputs">
-                    <input type="text" id="repo-url" placeholder="https://github.com/username/repository"
-                        spellcheck="false">
-                    <input type="text" id="entry-point" placeholder="Main file (e.g. app.py)" value="app.py"
-                        spellcheck="false">
-                </div>
-                <button id="clone-btn">
-                    <div class="btn-content">
-                        <div class="loader" id="loader"></div>
-                        <span id="btn-text">Clone Project</span>
+                <div class="inputs-row">
+                    <div style="flex: 2;">
+                        <span class="label">Repository URL</span>
+                        <input type="text" id="repo-url" placeholder="https://github.com/username/repository"
+                            style="width: 100%;" spellcheck="false">
                     </div>
-                </button>
+                    <div style="flex: 1;">
+                        <span class="label">Entry File</span>
+                        <input type="text" id="entry-point" placeholder="app.py" value="app.py" style="width: 100%;"
+                            spellcheck="false">
+                    </div>
+                </div>
+
+                <div class="inputs-row">
+                    <div style="flex: 1;">
+                        <span class="label">Environment Variables (KEY=VAL)</span>
+                        <textarea id="env-vars" placeholder="MONGO_USER=admin&#10;PORT=8080"
+                            style="width: 100%;"></textarea>
+                    </div>
+                    <div style="flex: 1;">
+                        <span class="label">Additional Requirements</span>
+                        <textarea id="requirements" placeholder="flask-cors&#10;pymongo&#10;python-dotenv"
+                            style="width: 100%;"></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button id="clone-btn" style="flex: 1;">
+                        <div class="btn-content">
+                            <div class="loader" id="loader"></div>
+                            <span id="btn-text">Clone Project</span>
+                        </div>
+                    </button>
+                    <button id="cancel-edit-btn"
+                        style="display: none; background: rgba(255,255,255,0.05); border: 1px solid var(--border); flex: 0.3; padding: 0.75rem; border-radius: 0.75rem; color: white; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
             </div>
             <div id="status-msg"></div>
         </section>
@@ -243,13 +320,21 @@
             <h2 style="margin-bottom: 1.5rem;">Deployed Projects</h2>
             <div class="project-list" id="project-list">
                 {% for project in projects %}
-                <a href="/{{ project.name }}/" class="project-card">
-                    <span class="project-icon">📦</span>
-                    <span class="project-name">{{ project.name }}</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.3rem;">
-                        Entry: {{ project.entry_point }}.py
-                    </span>
-                </a>
+                <div style="position: relative;">
+                    <a href="/{{ project.name }}/" class="project-card">
+                        <span class="project-icon">📦</span>
+                        <span class="project-name">{{ project.name }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.3rem;">
+                            Entry: {{ project.entry_point }}.py
+                        </span>
+                    </a>
+                    <div class="card-actions">
+                        <button class="edit-btn" onclick="startEdit(event, '{{ project.name }}')"
+                            title="Edit Config">✎</button>
+                        <button class="delete-btn" onclick="confirmDelete(event, '{{ project.name }}')"
+                            title="Delete Project">&times;</button>
+                    </div>
+                </div>
                 {% else %}
                 <p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 2rem;">
                     No projects deployed yet.
@@ -263,29 +348,42 @@
         const cloneBtn = document.getElementById('clone-btn');
         const repoUrlInput = document.getElementById('repo-url');
         const entryPointInput = document.getElementById('entry-point');
+        const envVarsInput = document.getElementById('env-vars');
+        const requirementsInput = document.getElementById('requirements');
         const statusMsg = document.getElementById('status-msg');
         const loader = document.getElementById('loader');
         const btnText = document.getElementById('btn-text');
-        const projectList = document.getElementById('project-list');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const formTitle = document.getElementById('form-title');
+        const formSubtitle = document.getElementById('form-subtitle');
+
+        let isEditing = false;
+        let editingProjectName = '';
 
         cloneBtn.addEventListener('click', async () => {
             const repoUrl = repoUrlInput.value.trim();
             const entryPoint = entryPointInput.value.trim() || 'app.py';
-            if (!repoUrl) return;
+            const envVars = envVarsInput.value.trim();
+            const requirements = requirementsInput.value.trim();
 
-            // UI Loading state
+            if (!repoUrl && !isEditing) return;
+
             cloneBtn.disabled = true;
             loader.style.display = 'block';
-            btnText.innerText = 'Cloning...';
+            btnText.innerText = isEditing ? 'Updating...' : 'Cloning & Setting up...';
             statusMsg.style.display = 'none';
 
             try {
-                const response = await fetch('/clone-project', {
+                const endpoint = isEditing ? '/update-project' : '/clone-project';
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        project_name: editingProjectName,
                         repo_url: repoUrl,
-                        entry_point: entryPoint
+                        entry_point: entryPoint,
+                        env_vars: envVars,
+                        requirements: requirements
                     })
                 });
 
@@ -295,26 +393,77 @@
                     statusMsg.innerText = `✅ ${data.message}`;
                     statusMsg.className = 'status-success';
                     statusMsg.style.display = 'block';
-
-                    // Add to list if not already there
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    statusMsg.innerText = `❌ ${data.error || 'Failed to clone repo'}`;
+                    statusMsg.innerText = `❌ ${data.error || 'Failed'}`;
                     statusMsg.className = 'status-error';
                     statusMsg.style.display = 'block';
                 }
             } catch (err) {
-                statusMsg.innerText = '❌ Network error occurred';
+                statusMsg.innerText = '❌ Network error';
                 statusMsg.className = 'status-error';
                 statusMsg.style.display = 'block';
             } finally {
                 cloneBtn.disabled = false;
                 loader.style.display = 'none';
-                btnText.innerText = 'Clone Project';
+                btnText.innerText = isEditing ? 'Save Changes' : 'Clone Project';
             }
         });
 
-        // Enter key support
+        async function startEdit(event, projectName) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            isEditing = true;
+            editingProjectName = projectName;
+            formTitle.innerText = `Edit: ${projectName}`;
+            formSubtitle.innerText = "Fetch current config and update as needed.";
+            btnText.innerText = "Save Changes";
+            cancelEditBtn.style.display = "block";
+            repoUrlInput.disabled = true;
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            try {
+                const response = await fetch(`/get-project/${projectName}`);
+                const data = await response.json();
+                if (response.ok) {
+                    repoUrlInput.value = data.repo_url;
+                    entryPointInput.value = data.entry_point || 'app.py';
+                    envVarsInput.value = data.env_vars || '';
+                    requirementsInput.value = data.requirements || '';
+                }
+            } catch (err) {
+                alert("Failed to collect project data");
+            }
+        }
+
+        cancelEditBtn.addEventListener('click', () => {
+            isEditing = false;
+            editingProjectName = '';
+            formTitle.innerText = "Clone New Project";
+            formSubtitle.innerText = "Enter a GitHub repository URL to host it locally.";
+            btnText.innerText = "Clone Project";
+            cancelEditBtn.style.display = "none";
+            repoUrlInput.disabled = false;
+            repoUrlInput.value = '';
+            entryPointInput.value = 'app.py';
+            envVarsInput.value = '';
+            requirementsInput.value = '';
+        });
+
+        async function confirmDelete(event, projectName) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!confirm(`Delete "${projectName}"?`)) return;
+            try {
+                const response = await fetch(`/delete-project/${projectName}`, { method: 'DELETE' });
+                if (response.ok) location.reload();
+            } catch (err) {
+                alert('Delete failed');
+            }
+        }
+
         repoUrlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') cloneBtn.click();
         });

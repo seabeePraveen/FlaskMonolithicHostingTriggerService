@@ -5,11 +5,6 @@ import json
 from werkzeug.wrappers import Request, Response
 
 class DynamicProjectDispatcher:
-    """
-    WSGI middleware that dynamically loads
-    Flask apps per project on request
-    """
-
     def __init__(self, app, projects_dir="projects", db_file="projects_db.json"):
         self.app = app
         self.projects_dir = projects_dir
@@ -35,13 +30,14 @@ class DynamicProjectDispatcher:
             
             if child_app:
                 print(f"✅ Loaded project: {project_name} (via {entry_point}.py)")
-                return child_app
+                return child_app, None
             else:
-                print(f"❌ No Flask app found in {module_path}")
-                return None
+                return None, f"No Flask app found in {module_path}. Make sure you have a 'Flask(__name__)' instance in that file."
         except Exception as e:
-            print(f"❌ Failed loading {project_name}: {e}")
-            return None
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"❌ Failed loading {project_name}:\n{error_details}")
+            return None, error_details
 
     def __call__(self, environ, start_response):
         request = Request(environ)
@@ -54,16 +50,32 @@ class DynamicProjectDispatcher:
         project_path = os.path.join(self.projects_dir, project_name)
 
         if os.path.isdir(project_path):
-            child_app = self.load_project(project_name)
+            config = self.get_project_config(project_name)
+            
+            project_envs = config.get("env_vars", {})
+            if project_envs:
+                os.environ.update(project_envs)
+
+            child_app, error = self.load_project(project_name)
             if child_app:
                 new_path = "/" + "/".join(parts[1:])
                 environ["PATH_INFO"] = new_path if new_path != "/" else "/"
                 environ["SCRIPT_NAME"] = environ.get("SCRIPT_NAME", "") + "/" + project_name
                 return child_app(environ, start_response)
-            return Response(
-                f"Failed to load project: {project_name}",
-                status=500
-            )(environ, start_response)
+            
+            # Return detailed error to the client
+            error_html = f"""
+            <div style="font-family: sans-serif; padding: 2rem; background: #fff1f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 0.5rem;">
+                <h1 style="margin-top: 0;">🚀 Project Load Error</h1>
+                <p>Failed to load project <strong>{project_name}</strong>.</p>
+                <div style="background: #ffffff; padding: 1rem; border-radius: 0.25rem; border: 1px solid #fecaca; font-family: monospace; overflow: auto; max-height: 400px;">
+                    <pre style="margin: 0;">{error}</pre>
+                </div>
+                <p style="margin-bottom: 0; margin-top: 1rem;"><a href="/" style="color: #991b1b; text-decoration: none; font-weight: bold;">&larr; Back to Dashboard</a></p>
+            </div>
+            """
+            return Response(error_html, status=500, mimetype='text/html')(environ, start_response)
+
 
         return self.app(environ, start_response)
 
